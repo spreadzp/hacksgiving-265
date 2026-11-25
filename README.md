@@ -5,6 +5,8 @@
 > production spend-enforcement code. The budget is enforced by
 > infrastructure, not by prompts.
 
+**[▶ Demo video (1:44)](https://youtu.be/B0BtgH6Lvko)** — full DENY→replan→ALLOW arc, adversarial probes, kill-test
+
 **Live demo artifacts:** [evidence/demo-results.json](evidence/demo-results.json) ·
 [gate/PROVENANCE.md](gate/PROVENANCE.md) · adversarial probe **11/11 resisted** ·
 conformance **43/43** · independent arc-audit: 2C/2H/8M found → **all fixed before recording**
