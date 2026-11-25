@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # verify.sh — judge-facing reproduction of hacksgiving-265 claims.
 # Runs everything verifiable WITHOUT sprite infrastructure:
-#   1. vendored mmf-255 byte-integrity (65/68 identical + 3 disclosed deltas)
+#   1. vendored mmf-255 byte-integrity (59/62 identical + 3 disclosed deltas)
 #   2. conformance suite — 43/43 vectors green
 #   3. local gate+shop boot → behavioral smoke (server-side pricing,
 #      cap enforcement, auth boundaries, fail-closed ledger)
@@ -97,8 +97,10 @@ R=$(ev '{"intent":{"vendor":"evil-shop","items":[{"sku":"pie","qty":1}]}}')
 [ "$(echo "$R" | jq -r .reason)" = "UNKNOWN_VENDOR" ] && ok "vendor outside allowlist → DENY" || bad "vendor: $R"
 
 # malformed/oversized
-CODE=$(python3 -c "print('{\"intent\":'+('\"pad\":\"'+'x'*20000+'\"')+'}')" 2>/dev/null | curl -s -o /dev/null -w '%{http_code}' -m 10 -X POST "$B/eval" -H "$AH" -H "$CT" -d @-)
-[ "$CODE" = "413" ] && ok "oversized body → 413 before buffering" || info "oversized body → $CODE (want 413)"
+# R2#6: no python3 dependency — coreutils only; non-413 is a hard failure
+PAD=$(printf 'x%.0s' $(seq 1 20000))
+CODE=$(printf '{"pad":"%s"}' "$PAD" | curl -s -o /dev/null -w '%{http_code}' -m 10 -X POST "$B/eval" -H "$AH" -H "$CT" -d @-)
+[ "$CODE" = "413" ] && ok "oversized body → 413 before buffering" || bad "oversized body → $CODE (want 413)"
 R=$(curl -s -m 10 -X POST "$B/eval" -H "$AH" -H "$CT" -d 'not json')
 echo "$R" | jq -e . >/dev/null 2>&1 && ok "malformed json → structured 4xx, not 5xx" || bad "malformed json: $R"
 

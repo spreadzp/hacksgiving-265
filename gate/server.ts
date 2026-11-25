@@ -15,6 +15,7 @@ import {
   insertReserved,
   settleEntry,
   failEntry,
+  validateCaps,
 } from "./vendor/src/server/lib/agent-wallet/envelope";
 import {
   createJsonSpendLedger,
@@ -68,6 +69,15 @@ const catalog = JSON.parse(
 const priceCents = new Map(
   catalog.items.map((i) => [i.sku, Math.round(i.priceUsd * 100)]),
 );
+
+// R2#13: validate the mandate at boot — a mis-edited mandate must fail loud,
+// not pick a surprising deny reason at runtime.
+try {
+  mandate.caps = validateCaps(mandate.caps); // throws on invalid — fail loud at boot
+} catch (e) {
+  console.error(`FATAL: mandate.caps invalid: ${(e as Error).message}`);
+  process.exit(1);
+}
 
 const ledger = createJsonSpendLedger(join(DATA_DIR, "spend-ledger.json"));
 const auditFile = join(DATA_DIR, "intents.jsonl");
@@ -234,7 +244,7 @@ app.post("/eval", async (c) => {
   const vendor = typeof intent?.vendor === "string" ? intent.vendor : "";
   if (!vendor) return c.json(denyEval("", 0, "MALFORMED_REQUEST"), 400);
   if (!mandate.allowedVendors.includes(vendor))
-    return c.json(denyEval(vendor, 0, "UNKNOWN_VENDOR"));
+    return c.json(denyEval(vendor, 0, "UNKNOWN_VENDOR"), 400);
 
   // C2: price the cart server-side; client amountUsd is never accepted.
   const priced = priceCart(intent?.items);
@@ -289,8 +299,23 @@ app.post("/execute", async (c) => {
     }
     return finish({ executed: false, verdict: "DENY", reason: DENY_REASON[res.deny.cap], deny: res.deny });
   }
-  const entry = await insertReserved(ledger, rec.wallet as `0x${string}`, rec.amountUsd, "buy-gateway", rec.intentId);
-  rec.entryId = entry.id;
+  // R2#1: on retry after OUTCOME_UNKNOWN, reuse the existing open reservation
+  // instead of stacking a duplicate (phantom cap-lock). The first attempt's
+  // outcome is what needs reconciling.
+  let entry: { id: string };
+  if (rec.entryId) {
+    const existing = (await ledger.listByWallet(rec.wallet as `0x${string}`)).find((x) => x.id === rec.entryId);
+    if (existing && existing.state === "reserved") {
+      entry = { id: existing.id };
+    } else {
+      return finish({ executed: false, error: "OUTCOME_UNKNOWN",
+        detail: "prior reservation resolved unexpectedly; reconcile via /audit",
+        entryId: rec.entryId }, 502);
+    }
+  } else {
+    entry = await insertReserved(ledger, rec.wallet as `0x${string}`, rec.amountUsd, "buy-gateway", rec.intentId);
+    rec.entryId = entry.id;
+  }
   rec.state = "EXECUTED"; audit(rec); // AUTHORIZED → EXECUTED (pre-settlement)
 
   const expectCents = Math.round(rec.amountUsd * 100);
@@ -353,7 +378,11 @@ async function startupReconcile() {
     for (const e of entries.filter((x) => x.state === "reserved")) {
       const probe = { intentId: e.refId, vendor: "agentbadge-shop", amountUsd: e.amountUsd } as IntentRec;
       const found = await reconcile(probe, 1);
-      if (found?.txId) await settleEntry(ledger, e.id, found.txId as `0x${string}`);
+      // R2#4: same validation as the execute path — the whole point of
+      // validReceipt is not trusting the connector/shop blindly.
+      const expectCents = Math.round(e.amountUsd * 100);
+      if (found && validReceipt(found, probe, expectCents))
+        await settleEntry(ledger, e.id, found.txId as `0x${string}`);
     }
   } catch {}
 }
@@ -361,7 +390,11 @@ async function startupReconcile() {
 import { shop } from "./shop";
 app.route("/demo/shop", shop); // own Bearer-key auth (connector api_key)
 
+// R2#2: re-probe stranded reservations periodically — a shop that is briefly
+// down at boot no longer strands them for the whole window. Release policy is
+// unchanged: never on a guess (H1); only a validated receipt settles.
 startupReconcile().then(() =>
   console.log(`gate ready; mandate ${JSON.stringify(mandate.caps)}`));
+setInterval(() => startupReconcile().catch(() => {}), 5 * 60 * 1000).unref();
 
 export default { port: Number(process.env.PORT ?? 8080), fetch: app.fetch };

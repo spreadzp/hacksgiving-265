@@ -20,12 +20,16 @@ log() { # timestamped local trail: what the agent asked the gate
   printf '%s %s\n' "$(date -u +%FT%TZ)" "$1" >> "$AUDIT_LOG"
 }
 
+# R2#3: no curl -f — an HTTP 502 OUTCOME_UNKNOWN is a *designed* gate outcome
+# (reservation held pending reconcile), not a transport error; the body must
+# reach the caller. -m 90 covers the gate worst case (~15s connector timeout
+# + reconcile retries with backoff ≈ 60s+).
 post() { # post <path> <json-body>
-  curl -sfS -m 20 -X POST "$GATE_URL$1" \
+  curl -sS -m 90 -X POST "$GATE_URL$1" \
     -H "Authorization: Bearer ${GATE_TOKEN:-}" -H "$CT" -d "$2"
 }
 get() {
-  curl -sfS -m 20 "$GATE_URL$1" -H "Authorization: Bearer ${GATE_TOKEN:-}"
+  curl -sS -m 20 "$GATE_URL$1" -H "Authorization: Bearer ${GATE_TOKEN:-}"
 }
 
 case "${1:-}" in

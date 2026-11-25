@@ -180,12 +180,24 @@ from the live deployment.
   from the same rolling budget — **the cap is the invariant**, not
   per-intent uniqueness.
 - `execute` of one intentId is deduplicated: replay returns the same
-  receipt, the shop debits once.
+  receipt, the shop debits once. Dedup at the shop layer is durable
+  (persisted); the gate's in-memory receipt lookup lives for the process
+  lifetime — after a gate restart an old intentId is `UNKNOWN_INTENT`
+  at the gate, but the money invariant (one debit per intent) still holds
+  because the shop dedups independently.
 - While the gate is down, **no purchase is possible** (fail-closed) —
   availability is sacrificed for safety, deliberately.
+- An indeterminate purchase outcome (connector timeout/5xx) **holds**
+  the cap reservation rather than releasing it on a guess; the gate
+  reconciles against shop receipts periodically. Worst case: budget
+  frozen until the rolling window expires — availability cost, never
+  an overspend.
 - Corrupt ledger state fails closed (`500`s), it never silently resets
   the budget. Writes are atomic (tmp+rename) — a kill mid-write cannot
-  tear the file.
+  tear the file. Caveat: a fully *missing* ledger file is the bootstrap
+  path (fresh budget) — so host filesystem access is a trust assumption,
+  as in any demo; the guarantee is about crashes and corruption, not
+  about an attacker who already owns the gate host.
 - The demo shop denominates in `demo-credit` and says so. The cap number
   equals the real funds at risk when wired to real money — the mechanism
   does not depend on the currency being fake.

@@ -78,7 +78,7 @@ let denied: { reason: string; used?: number; limit?: number } | null = null;
 let lastCart: string[] = [];
 
 for (let round = 1; round <= MAX_ROUNDS; round++) {
-  const remaining = denied ? (denied.limit ?? budget) - (denied.used ?? 0) : budget;
+  const remaining = denied && typeof denied.used === "number" ? (denied.limit ?? budget) - (denied.used ?? 0) : budget;
   const over = Math.round((cartTotal(lastCart) - remaining) * 100) / 100;
   const prompt = denied
     ? `${task}\nCatalog: ${JSON.stringify(catalog.items)}\nYour cart ${JSON.stringify(lastCart)} costs $${cartTotal(lastCart)} but only $${remaining} remains of the $${denied.limit} daily budget — it is $${over} OVER budget and was DENIED (${denied.reason}). You MUST remove items until the sum of priceUsd is at most $${remaining}. Example: if remaining is $${remaining}, a valid cart sums to $${remaining} or less. Reply JSON only, lowercase skus, with the sum in "total": {"items":["sku",...],"total":${Math.max(1, Math.floor(remaining))}}`
@@ -122,8 +122,22 @@ for (let round = 1; round <= MAX_ROUNDS; round++) {
 
   if (parsed?.verdict === "DENY") {
     denied = { reason: parsed.reason, used: parsed.deny?.used, limit: parsed.deny?.limit };
-    console.log(`gate: DENY ${parsed.reason} (used=$${denied.used}/limit=$${denied.limit}) — replanning…`);
+    // R2#15: velocity denies report transaction counts, not dollars —
+    // don't feed the model nonsense dollar arithmetic for those.
+    if (parsed.deny?.cap === "daily" || parsed.deny?.cap === "weekly" || parsed.deny?.cap === "monthly") {
+      console.log(`gate: DENY ${parsed.reason} (used=$${denied.used}/limit=$${denied.limit}) — replanning…`);
+    } else {
+      console.log(`gate: DENY ${parsed.reason} — replanning (non-dollar cap)`);
+    }
     continue;
+  }
+  // R2#3: the gate's designed indeterminate outcome — reservation held,
+  // reconcile pending. Terminal and reportable, not a crash.
+  if (parsed?.error === "OUTCOME_UNKNOWN") {
+    console.log(`\ngate: OUTCOME_UNKNOWN — the purchase may or may not have landed;`);
+    console.log(`the cap reservation is HELD (fail-safe) pending reconciliation.`);
+    console.log(`This is the designed conservative answer — check /audit before retrying.`);
+    break;
   }
   if (parsed?.executed && parsed?.receipt) {
     console.log(`\n== PURCHASED == tx=${parsed.receipt.txId} amount=$${parsed.receipt.amountUsd} shopBalance=$${parsed.receipt.balanceAfterUsd}`);

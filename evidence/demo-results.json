@@ -2,7 +2,7 @@
   "generated": "2026-11-25T09:17:59Z",
   "reproduce": {
     "cleanClone": "git clone github.com/spreadzp/hacksgiving-265 + bun install + scripts/verify.sh",
-    "result": "20/20 PASS (vendor integrity 59/62+3 disclosed deltas, conformance 43/43, 16 behavioral smoke checks)"
+    "result": "20/20 PASS (vendor integrity 59/62+3 disclosed deltas, conformance 43/43, 17 behavioral smoke checks)"
   },
   "liveProbe": {
     "ts": "2026-11-25T09:17:59Z",
