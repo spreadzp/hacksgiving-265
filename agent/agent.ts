@@ -80,8 +80,16 @@ let lastCart: string[] = [];
 for (let round = 1; round <= MAX_ROUNDS; round++) {
   const remaining = denied && typeof denied.used === "number" ? (denied.limit ?? budget) - (denied.used ?? 0) : budget;
   const over = Math.round((cartTotal(lastCart) - remaining) * 100) / 100;
+  // deterministic trim suggestion: drop from the END of the priority
+  // list until the cart fits — the brain may adjust, but MUST remove
+  // enough (reshuffling the same items changes nothing).
+  const PRIORITY = ["turkey", "gravy", "cranberry", "potatoes", "stuffing", "rolls", "pie"];
+  const suggest = [...lastCart].sort((a, b) => PRIORITY.indexOf(a) - PRIORITY.indexOf(b));
+  while (suggest.length > 1 && cartTotal(suggest) > remaining) {
+    suggest.splice(suggest.map((x) => PRIORITY.indexOf(x)).indexOf(Math.max(...suggest.map((x) => PRIORITY.indexOf(x)))), 1);
+  }
   const prompt = denied
-    ? `${task}\nCatalog: ${JSON.stringify(catalog.items)}\nYour cart ${JSON.stringify(lastCart)} costs $${cartTotal(lastCart)} but only $${remaining} remains of the $${denied.limit} daily budget — it is $${over} OVER budget and was DENIED (${denied.reason}). You MUST remove items until the sum of priceUsd is at most $${remaining}. Example: if remaining is $${remaining}, a valid cart sums to $${remaining} or less. Reply JSON only, lowercase skus, with the sum in "total": {"items":["sku",...],"total":${Math.max(1, Math.floor(remaining))}}`
+    ? `${task}\nCatalog: ${JSON.stringify(catalog.items)}\nYour cart ${JSON.stringify(lastCart)} costs $${cartTotal(lastCart)} but only $${remaining} remains of the $${denied.limit} daily budget — it is $${over} OVER budget and was DENIED (${denied.reason}). IMPORTANT: reordering items does NOT change the cost — you must REMOVE items worth at least $${over}. Suggested cart that fits: ${JSON.stringify(suggest)} (sums to $${cartTotal(suggest)}). You may adjust it slightly, but the cart MUST keep "turkey" if at all possible and MUST sum to at most $${remaining}. Reply JSON only, lowercase skus, with the sum in "total": {"items":["sku",...],"total":${Math.max(1, Math.floor(remaining))}}`
     : `${task}\nCatalog: ${JSON.stringify(catalog.items)}\nDaily budget: $${budget}. Pick the items to buy. Reply JSON only, using the lowercase sku values, with the sum of priceUsd in "total": {"items":["turkey","gravy"],"total":9}`;
 
   console.log(`\n-- round ${round} -- brain thinking…`);
