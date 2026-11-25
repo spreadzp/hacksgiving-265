@@ -278,3 +278,15 @@ with a working stock CLI):
 cd agent
 GATE_URL=http://localhost:8080 GATE_TOKEN=dev bun agent.ts
 ```
+
+---
+
+## Contact & feedback
+
+Questions, feedback, or want production-grade spend enforcement for your agent?
+
+- **AgentBadge** — [agentbadge.xyz](https://agentbadge.xyz/) — the production enforcement module this demo's gate is byte-verified against
+- **GitHub** — [github.com/spreadzp](https://github.com/spreadzp) · issues in this repo are the fastest feedback channel
+- **X/Twitter** — [@david_grigoriev](https://x.com/david_grigoriev)
+- **LinkedIn** — [Paul Spread](https://www.linkedin.com/in/paul-spread-bb337b63/)
+- **YouTube** — [@2009Spread](https://www.youtube.com/@2009Spread)
