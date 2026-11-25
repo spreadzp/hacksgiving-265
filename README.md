@@ -47,3 +47,33 @@ cd gate && bun install
 GATE_TOKEN=… SHOP_API_KEY=… bun server.ts   # :8080
 bunx vitest run vendor/tests/conformance/mmf/   # 43 vectors
 ```
+
+## Verify it yourself
+
+```sh
+git clone <this repo> && cd hacksgiving-265/gate && bun install
+bash ../scripts/verify.sh     # 20 checks, ~1 min, no sprite account needed
+```
+
+`verify.sh` checks vendored-code byte integrity (59/62 byte-identical to
+`agentbadge@40eb49c` + exactly the 3 disclosed arc-audit-H2 delta files),
+runs the conformance suite (43/43), boots the gate locally and probes the
+behavioral claims: server-side pricing, spoofing resistance, auth
+boundaries, body limits, corrupt-ledger fail-closed. The live execute path
+(gate → connector → real receipt) is verified in
+[evidence/demo-results.json](evidence/demo-results.json) — it cannot run
+offline *by construction*, because needing the sprite identity to spend
+is the security claim.
+
+## Honest semantics (what the cap does and does not promise)
+
+- `eval` is not idempotent: asking twice creates two intents. Both draw
+  from the **same rolling-24h budget** — the cap is the invariant.
+- `execute` of one intentId is deduplicated: replay returns the same
+  receipt, the shop debits once.
+- While the gate process is down, **no purchase is possible at all**
+  (fail-closed). The ledger survives restarts; corrupt ledger state
+  fails closed (500s) instead of silently resetting the budget.
+- adversarial probe results (spoofing, bypass attempts, replay, kill
+  test): [evidence/demo-results.json](evidence/demo-results.json) —
+  11/11 adversarial cases resisted.
