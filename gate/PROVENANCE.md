@@ -6,7 +6,7 @@ commit **`40eb49c1037fb974c2a61dc49153be8278b0020f`**.
 - `vendor-shasum.txt` — sha256 of every file **as it exists upstream**,
   generated at vendor time. Verification: `sha256sum -c vendor-shasum.txt`
   from the repo root.
-- Expected result after arc R1: **67/68 byte-identical + 1 disclosed delta**
+- Expected result after arc R1: **65/68 byte-identical + 3 disclosed deltas**
   (see below).
 
 ## Disclosed delta (arc-audit R1, finding H2)
@@ -25,3 +25,15 @@ Fix applied locally (documented in-file under `DISCLOSED-DELTA`):
 
 This file is an **upstream fix candidate** for agentbadge mmf-255; once the
 fix lands upstream and is re-vendored, verification returns to 68/68.
+
+Two conformance-harness files carry the matching expectation deltas (the
+upstream suite already documented this exact bug as **OWN-2, severity high,
+candidate for EPIC-234** — the disclosed delta is the upstream-planned
+remediation, and the updated suite now testifies to the fixed behavior):
+
+- `vendor/tests/conformance/mmf/lib/evidence-probe.ts` — corrupted-JSON
+  matrix row expects fail-closed; probe tolerates a throwing ledger.
+- `vendor/tests/conformance/mmf/own-invariants.test.ts` — OWN-2 marked
+  FIXED; assertions flipped to 500 / no-reservation.
+
+Conformance: **43/43 pass** with the delta applied.

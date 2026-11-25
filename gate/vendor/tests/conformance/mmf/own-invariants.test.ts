@@ -121,9 +121,10 @@ describe("own-invariant: evidence matrix 7×6 (D-255-Q24)", () => {
     expect(by["registry-throw"].durable).toBeNull();
     expect(by["registry-throw"].alert).toBeNull();
 
-    // corrupted-json → spend ALLOWED (fail-open) + file clobbered.
-    expect(by["corrupted-json"].http).toBe(200);
-    expect(by["corrupted-json"].reservation).toBe(true);
+    // corrupted-json → DISCLOSED-DELTA (arc R1 H2): 500 fail-closed,
+    // no reservation, no spend — the EPIC-234-planned remediation.
+    expect(by["corrupted-json"].http).toBe(500);
+    expect(by["corrupted-json"].reservation).toBe(false);
   });
 
   it("evidence-write failure → fail-closed 500, no alert, no spend", async () => {
@@ -228,12 +229,13 @@ describe("own-invariant results", () => {
         },
         {
           id: "OWN-2",
-          title: "corrupted-JSON ledger fails OPEN and clobbers history",
+          title:
+            "corrupted-JSON ledger fails CLOSED — FIXED (disclosed-delta arc R1 H2)",
           severity: "high",
           evidence:
-            "garbage ledger.json → readJson catch → entries={} → spend allowed; insert overwrites file",
+            "garbage ledger.json → readJson throws → 500, no reservation, no spend; atomic tmp+rename writes prevent torn files",
           candidate_for:
-            "EPIC-234: fail-closed on unreadable ledger, or quarantine + alert",
+            "UPSTREAM: port this fix back to agentbadge (the EPIC-234 remediation)",
         },
         {
           id: "OWN-3",

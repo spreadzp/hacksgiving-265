@@ -52,7 +52,7 @@ no Ed25519 credential model nor evidence hash chain (prod-side dims None; canoni
 ## Own-invariant findings (probes, not MMF)
 
 - **OWN-1** (high) — check-then-insert TOCTOU: parallel begins overshoot caps
-- **OWN-2** (high) — corrupted-JSON ledger fails OPEN and clobbers history
+- **OWN-2** (high) — corrupted-JSON ledger fails CLOSED — FIXED (disclosed-delta arc R1 H2)
 - **OWN-3** (medium) — not-registered + registry-throw deny without evidence
 - **OWN-4** (medium) — refId is never a dedup key — retries double-charge caps
 

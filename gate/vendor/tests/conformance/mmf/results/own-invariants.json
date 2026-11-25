@@ -85,12 +85,12 @@
       },
       {
         "branch": "corrupted-json",
-        "http": 200,
+        "http": 500,
         "durable": null,
         "alert": null,
-        "reservation": true,
-        "reason": "—",
-        "replay": "corrupt file silently replaced (clobbered=true)"
+        "reservation": false,
+        "reason": null,
+        "replay": "fail-closed: corrupt file never replaced (clobbered=false)"
       }
     ],
     "failClosed": {
@@ -160,10 +160,10 @@
     },
     {
       "id": "OWN-2",
-      "title": "corrupted-JSON ledger fails OPEN and clobbers history",
+      "title": "corrupted-JSON ledger fails CLOSED — FIXED (disclosed-delta arc R1 H2)",
       "severity": "high",
-      "evidence": "garbage ledger.json → readJson catch → entries={} → spend allowed; insert overwrites file",
-      "candidate_for": "EPIC-234: fail-closed on unreadable ledger, or quarantine + alert"
+      "evidence": "garbage ledger.json → readJson throws → 500, no reservation, no spend; atomic tmp+rename writes prevent torn files",
+      "candidate_for": "UPSTREAM: port this fix back to agentbadge (the EPIC-234 remediation)"
     },
     {
       "id": "OWN-3",

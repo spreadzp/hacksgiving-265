@@ -111,13 +111,15 @@ async function summarize(
   first: ProbeOutcome,
   second: ProbeOutcome,
 ): Promise<MatrixRow> {
-  const all = await env.ledger.listByWallet(W);
+  // disclosed-delta (arc R1 H2): corrupt ledger throws on read — treat as
+  // zero evidence; the branch's 500/no-reservation carries the signal.
+  const all = await env.ledger.listByWallet(W).catch(() => []);
   const denied = all.filter((e) => e.state === "denied");
   const reserved = all.some(
     (e) => e.state === "reserved" || e.state === "settled",
   );
   const lastAlert = env.alertStore.list().at(-1);
-  const secondDenied = (await env.ledger.listByWallet(W)).filter(
+  const secondDenied = (await env.ledger.listByWallet(W).catch(() => [])).filter(
     (e) => e.state === "denied",
   );
   const replay =
@@ -202,7 +204,8 @@ export async function runEvidenceMatrix(): Promise<MatrixRow[]> {
       });
       rows.push(await probeBranch("registry-throw", env));
     }
-    // 7. corrupted-JSON ledger — garbage file → readJson{} → ALLOW.
+    // 7. corrupted-JSON ledger — DISCLOSED-DELTA (arc R1 H2): garbage file
+    //    → readJson throws → 500 fail-closed, file NOT clobbered, no spend.
     {
       const dir = mkdtempSync(join(tmpdir(), "mmf-evi-"));
       try {
@@ -216,7 +219,7 @@ export async function runEvidenceMatrix(): Promise<MatrixRow[]> {
           status: first.status,
           body: null,
         });
-        row.replay = `corrupt file silently replaced (clobbered=${clobbered})`;
+        row.replay = `fail-closed: corrupt file never replaced (clobbered=${clobbered})`;
         rows.push(row);
       } finally {
         rmSync(dir, { recursive: true, force: true });
