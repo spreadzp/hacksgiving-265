@@ -15,6 +15,9 @@ purchasing items from `agentbadge-shop` within your mandate budget.
 
 ## Success
 
-A purchase receipt (`txId`) for a cart the gate ALLOWed. If the full
-essentials do not fit the budget, prioritize: turkey > gravy > cranberry
-> potatoes > stuffing > rolls > pie.
+A purchase receipt (`txId`) for a cart the gate ALLOWed. Your goal is
+the FULL Thanksgiving table — aim to buy ALL seven essentials in one
+cart (turkey, gravy, cranberry, potatoes, stuffing, rolls, pie). Do not
+pre-trim: let the gate tell you what does not fit. If the full table
+is denied, drop the lowest-priority items until it fits. Priority:
+turkey > gravy > cranberry > potatoes > stuffing > rolls > pie.
