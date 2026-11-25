@@ -79,8 +79,9 @@ let lastCart: string[] = [];
 
 for (let round = 1; round <= MAX_ROUNDS; round++) {
   const remaining = denied ? (denied.limit ?? budget) - (denied.used ?? 0) : budget;
+  const over = Math.round((cartTotal(lastCart) - remaining) * 100) / 100;
   const prompt = denied
-    ? `${task}\nCatalog: ${JSON.stringify(catalog.items)}\nYour cart ${JSON.stringify(lastCart)} ($${cartTotal(lastCart)}) was DENIED by the spend gate: ${denied.reason}. You have already spent $${denied.used ?? 0} of the $${denied.limit} daily limit, so your remaining budget is $${remaining}. Pick items whose priceUsd values sum to at most $${remaining}. Reply JSON only, lowercase skus, with the sum in "total": {"items":["sku",...],"total":9}`
+    ? `${task}\nCatalog: ${JSON.stringify(catalog.items)}\nYour cart ${JSON.stringify(lastCart)} costs $${cartTotal(lastCart)} but only $${remaining} remains of the $${denied.limit} daily budget — it is $${over} OVER budget and was DENIED (${denied.reason}). You MUST remove items until the sum of priceUsd is at most $${remaining}. Example: if remaining is $${remaining}, a valid cart sums to $${remaining} or less. Reply JSON only, lowercase skus, with the sum in "total": {"items":["sku",...],"total":${Math.max(1, Math.floor(remaining))}}`
     : `${task}\nCatalog: ${JSON.stringify(catalog.items)}\nDaily budget: $${budget}. Pick the items to buy. Reply JSON only, using the lowercase sku values, with the sum of priceUsd in "total": {"items":["turkey","gravy"],"total":9}`;
 
   console.log(`\n-- round ${round} -- brain thinking…`);
