@@ -6,8 +6,11 @@ commit **`40eb49c1037fb974c2a61dc49153be8278b0020f`**.
 - `vendor-shasum.txt` — sha256 of every file **as it exists upstream**,
   generated at vendor time. Verification: `sha256sum -c vendor-shasum.txt`
   from the repo root.
-- Expected result after arc R1: **65/68 byte-identical + 3 disclosed deltas**
-  (see below).
+- Six of the 68 files (`tests/conformance/mmf/results/*`) are
+  upstream-committed suite OUTPUT snapshots; they regenerate on every
+  suite run and are excluded from byte-verification by design.
+- Expected result after arc R1: **59/62 byte-identical + 3 disclosed
+  deltas** of the verification-eligible files (see below).
 
 ## Disclosed delta (arc-audit R1, finding H2)
 
