@@ -175,7 +175,7 @@ from the live deployment.
 
 ## Honest semantics (what the cap does and does not promise)
 
-- The cap is **$10 per rolling 24h window**, not per calendar day.
+- The cap is **$100 per rolling 24h window**, not per calendar day.
 - `eval` is not idempotent: asking twice creates two intents. Both draw
   from the same rolling budget — **the cap is the invariant**, not
   per-intent uniqueness.
@@ -210,9 +210,9 @@ adversarial audit (Arc Studio). Verdict: **REQUEST CHANGES** — 2 Critical,
 2 High, 8 Medium findings, every Critical/High with a reproduced exploit:
 
 - the cap metered a client-declared number, and rounding differences let
-  an agent double-spend the budget ($20 of debits against a $10 cap)
+  an agent double-spend the budget ($20 of debits against the then-$10 cap)
 - a slow connector response could release cap space while money moved
-  ($18 against $10)
+  ($18 against the then-$10 cap)
 - a torn ledger write silently reset the budget to zero
 
 All findings were fixed the same day — server-side pricing,
@@ -235,7 +235,7 @@ gate/
   shop.ts          /demo/shop/* — server-priced purchase, dedup, receipts,
                    by-intent reconciliation oracle
   catalog.json     canonical trusted price list (single source for gate+shop)
-  mandate.json     the demo mandate: $10/rolling-24h + velocity cap
+  mandate.json     the demo mandate: $100/rolling-24h + velocity cap
   vendor/          mmf-255 snapshot — pinned by vendor-shasum.txt
   shims/           minimal shims for workspace-package imports
   PROVENANCE.md    upstream commit, verification method, disclosed deltas

@@ -2,11 +2,11 @@
   "mandateId": "mnd_thanksgiving_2026",
   "subject": "demo-agent-wallet",
   "caps": {
-    "dailyUsd": 10,
+    "dailyUsd": 100,
     "maxTxPerHour": 60
   },
   "allowedVendors": [
     "agentbadge-shop"
   ],
-  "note": "Hacksgiving demo mandate: Thanksgiving dinner essentials, budget $10 per rolling 24h (window, not calendar day \u2014 arc R1 M8) \u2014 the cap equals the actual funds at risk. subject is an opaque demo ledger key, not a real hex address. Only dailyUsd+velocity are set: any perTx < cart would deny as PER_TX instead of the documented DAILY_CAP_EXCEEDED (caps must be monotonic perTx <= daily). Prices are computed server-side from the trusted catalog; client-declared amounts are ignored (arc R1 C2)."
+  "note": "Hacksgiving demo mandate: Thanksgiving dinner essentials, budget $100 per rolling 24h (window, not calendar day \u2014 arc R1 M8). subject is an opaque demo ledger key, not a real hex address. Only dailyUsd+velocity are set: any perTx < cart would deny as PER_TX instead of the documented DAILY_CAP_EXCEEDED (caps must be monotonic perTx <= daily). Prices are computed server-side from the trusted catalog; client-declared amounts are ignored (arc R1 C2)."
 }

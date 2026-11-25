@@ -1,13 +1,41 @@
 {
   "vendor": "agentbadge-shop",
-  "note": "Mirror of the shop catalog — the agent cannot call the shop directly (401), so the catalog is provided in task context.",
+  "note": "Mirror of the shop catalog \u2014 the agent cannot call the shop directly (401), so the catalog is provided in task context.",
   "items": [
-    { "sku": "turkey",    "name": "Roast turkey 12lb",          "priceUsd": 8 },
-    { "sku": "pie",       "name": "Pumpkin pie",                "priceUsd": 3.5 },
-    { "sku": "potatoes",  "name": "Yukon gold potatoes 5lb",    "priceUsd": 2.5 },
-    { "sku": "cranberry", "name": "Cranberry sauce x2",         "priceUsd": 2 },
-    { "sku": "rolls",     "name": "Dinner rolls x12",           "priceUsd": 1.5 },
-    { "sku": "stuffing",  "name": "Stuffing mix",               "priceUsd": 1.5 },
-    { "sku": "gravy",     "name": "Gravy kit",                  "priceUsd": 1 }
+    {
+      "sku": "turkey",
+      "name": "Roast turkey 12lb",
+      "priceUsd": 48
+    },
+    {
+      "sku": "pie",
+      "name": "Pumpkin pie",
+      "priceUsd": 18
+    },
+    {
+      "sku": "potatoes",
+      "name": "Yukon gold potatoes 5lb",
+      "priceUsd": 12
+    },
+    {
+      "sku": "rolls",
+      "name": "Dinner rolls x12",
+      "priceUsd": 11
+    },
+    {
+      "sku": "stuffing",
+      "name": "Stuffing mix",
+      "priceUsd": 9
+    },
+    {
+      "sku": "gravy",
+      "name": "Gravy kit",
+      "priceUsd": 8
+    },
+    {
+      "sku": "cranberry",
+      "name": "Cranberry sauce x2",
+      "priceUsd": 7
+    }
   ]
 }

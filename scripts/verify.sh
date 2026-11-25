@@ -62,23 +62,23 @@ B="http://localhost:$PORT"
 AH="Authorization: Bearer $T_TOK"
 CT="content-type: application/json"
 ev()  { curl -s -m 10 -X POST "$B/eval" -H "$AH" -H "$CT" -d "$1"; }
-FULL='{"intent":{"vendor":"agentbadge-shop","items":[{"sku":"turkey","qty":1},{"sku":"pie","qty":1},{"sku":"potatoes","qty":1},{"sku":"cranberry","qty":1},{"sku":"gravy","qty":1},{"sku":"rolls","qty":1}]}}'
+FULL='{"intent":{"vendor":"agentbadge-shop","items":[{"sku":"turkey","qty":1},{"sku":"pie","qty":1},{"sku":"potatoes","qty":1},{"sku":"cranberry","qty":1},{"sku":"gravy","qty":1},{"sku":"rolls","qty":1},{"sku":"stuffing","qty":1}]}}'
 
 R=$(curl -s -m 10 "$B/healthz"); echo "$R" | grep -q '"ok":true' && ok "healthz" || bad "healthz: $R"
 
 # cap enforcement: full cart ($18.50 server-priced) vs $10 rolling cap
 R=$(ev "$FULL")
 V=$(echo "$R" | jq -r '.verdict + "/" + .reason + "/" + (.amountUsd|tostring)')
-[ "$V" = "DENY/DAILY_CAP_EXCEEDED/18.5" ] && ok "full cart \$18.50 → DENY DAILY_CAP_EXCEEDED" || bad "full cart: $V"
+[ "$V" = "DENY/DAILY_CAP_EXCEEDED/113" ] && ok "full cart \$113 → DENY DAILY_CAP_EXCEEDED" || bad "full cart: $V"
 
 # C1 regression: client-declared amountUsd is ignored entirely
 R=$(echo "$FULL" | jq '.intent.amountUsd=0.005' | curl -s -m 10 -X POST "$B/eval" -H "$AH" -H "$CT" -d @-)
-[ "$(echo "$R" | jq -r .amountUsd)" = "18.5" ] && ok "client amountUsd 0.005 ignored (server-priced 18.5)" || bad "C1 regression: $(echo "$R" | jq -c .)"
+[ "$(echo "$R" | jq -r .amountUsd)" = "113" ] && ok "client amountUsd 0.005 ignored (server-priced 113)" || bad "C1 regression: $(echo "$R" | jq -c .)"
 
 # small cart → ALLOW at server price
 R=$(ev '{"intent":{"vendor":"agentbadge-shop","items":[{"sku":"pie","qty":1},{"sku":"gravy","qty":1}]}}')
-[ "$(echo "$R" | jq -r .verdict)" = "ALLOW" ] && [ "$(echo "$R" | jq -r .amountUsd)" = "4.5" ] \
-  && ok "pie+gravy → ALLOW at server price \$4.50" || bad "small cart: $(echo "$R" | jq -c '{verdict,amountUsd}')"
+[ "$(echo "$R" | jq -r .verdict)" = "ALLOW" ] && [ "$(echo "$R" | jq -r .amountUsd)" = "26" ] \
+  && ok "pie+gravy → ALLOW at server price \$26" || bad "small cart: $(echo "$R" | jq -c '{verdict,amountUsd}')"
 IID=$(echo "$R" | jq -r .intentId)
 
 # C2 regression: unknown sku / qty inflation rejected
@@ -88,7 +88,7 @@ R=$(ev '{"intent":{"vendor":"agentbadge-shop","amountUsd":1e-9,"items":[{"sku":"
 [ "$(echo "$R" | jq -r .verdict)" = "DENY" ] && ok "qty-inflation vector → DENY" || bad "qty inflation: $R"
 
 # adversarial basics: approved-flag ignored, verdict computed by gate
-R=$(ev '{"intent":{"vendor":"agentbadge-shop","approved":true,"verdict":"ALLOW","wallet":"0xother","items":[{"sku":"turkey","qty":1},{"sku":"pie","qty":1},{"sku":"potatoes","qty":1}]}}')
+R=$(echo "$FULL" | jq '.intent.approved=true | .intent.verdict="ALLOW" | .intent.wallet="0xother"' | curl -s -m 10 -X POST "$B/eval" -H "$AH" -H "$CT" -d @-)
 [ "$(echo "$R" | jq -r .verdict)" = "DENY" ] && [ "$(echo "$R" | jq -r .wallet)" != "0xother" ] \
   && ok "approved/verdict/wallet spoofing ignored" || bad "spoofing: $(echo "$R" | jq -c .)"
 

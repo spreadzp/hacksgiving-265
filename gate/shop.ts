@@ -10,7 +10,7 @@ import { timingSafeEqual, createHash, createHash as hash } from "node:crypto";
 const SHOP_KEY = process.env.SHOP_API_KEY ?? "";
 const DATA_DIR = process.env.GATE_DATA_DIR ?? join(process.cwd(), ".data");
 const DB = join(DATA_DIR, "shop.json");
-const MAX_PURCHASE_CENTS = 5000; // $50 defense-in-depth ceiling per purchase
+const MAX_PURCHASE_CENTS = 20000; // $200 defense-in-depth ceiling per purchase
 
 // canonical catalog — same file the gate prices from
 const catalog = JSON.parse(
