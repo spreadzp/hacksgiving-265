@@ -12,7 +12,7 @@ const HERE = fileURLToPath(new URL(".", import.meta.url));
 const CLIENT = `${HERE}gate-client.sh`;
 const MODEL = process.env.OLLAMA_MODEL ?? "llama3.2:3b";
 const BRAIN = process.env.AGENT_BRAIN ?? "ollama";
-const MAX_ROUNDS = 5;
+const MAX_ROUNDS = 6;
 
 /* ------------------------------- brain -------------------------------- */
 
