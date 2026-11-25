@@ -24,7 +24,7 @@
  * Fail-closed (grill Q2=A): a failed append/transition propagates —
  * the payment path must NOT succeed on an unwritten ledger.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import type { SpendLedgerRepository } from "@agentbadge/database";
@@ -112,19 +112,24 @@ interface LedgerJsonFile {
   entries: Record<string, SpendEntry>;
 }
 
+// DISCLOSED-DELTA (hacksgiving-265 arc R1 H2): upstream mmf-255 returns
+// `{entries:{}}` on a corrupt/torn read — a silent budget reset — and writes
+// non-atomically (truncate-then-write tears on kill/OOM). Fixed here:
+// corrupt read throws (fail-closed: no ledger, no spend); write is
+// tmp+rename atomic. Upstream fix candidate for agentbadge.
 function readJson(path: string): LedgerJsonFile {
   if (!existsSync(path)) return { entries: {} };
-  try {
-    const raw = JSON.parse(readFileSync(path, "utf8")) as LedgerJsonFile;
-    return { entries: raw.entries ?? {} };
-  } catch {
-    return { entries: {} };
-  }
+  const raw = JSON.parse(readFileSync(path, "utf8")) as LedgerJsonFile;
+  if (typeof raw.entries !== "object" || raw.entries === null)
+    throw new Error(`ledger corrupt: missing entries map (${path})`);
+  return { entries: raw.entries };
 }
 
 function writeJson(path: string, data: LedgerJsonFile): void {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, JSON.stringify(data));
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, JSON.stringify(data));
+  renameSync(tmp, path); // atomic on posix: readers never see a torn file
 }
 
 const byNewest = (a: SpendEntry, b: SpendEntry) => b.at - a.at;

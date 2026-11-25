@@ -7,7 +7,7 @@ production spend-enforcement code (vendored `mmf-255`, see
 
 ```
 agent (Sprite, label:agent)
-  → POST /eval {vendor, amountUsd}          → ALLOW | DENY + reason
+  → POST /eval {vendor, items:[{sku,qty}]}  → ALLOW | DENY + reason
   → POST /execute {intentId}                → connector gateway → shop → receipt
 gate+shop (Sprite, label:gate)
   → connector `custom_api` (access_policy: sprite_labels:["gate"])
@@ -16,17 +16,28 @@ gate+shop (Sprite, label:gate)
 
 Why the agent cannot overspend: it holds no shop credential (401), and it
 cannot call the connector itself (deny-by-default label policy → 403).
-The only spend path is `eval → execute` inside the gate, where the
-envelope check (`checkEnvelope`) decides from the persisted ledger.
+The only spend path is `eval → execute` inside the gate. The gate prices
+the cart **server-side from a trusted catalog** (client-declared amounts
+are ignored — arc R1 C1/C2), reserves cap space in the persisted ledger
+before touching the shop, never releases a reservation on an unknown
+outcome (it reconciles against shop receipts instead — arc R1 H1), and
+fails closed on a corrupt or missing ledger (atomic writes — arc R1 H2).
+Cap: **$10 per rolling 24h window**, not calendar day.
+
+Single-tenant demo: one GATE_TOKEN, one subject wallet, one shared budget.
 
 ## Layout
 
 - `gate/server.ts` — Hono service: `/eval`, `/execute`, `/audit`, `/mandate`, `/healthz`
-- `gate/shop.ts` — `/demo/shop/*`: catalog, purchase (intentId-deduped), receipts
-- `gate/mandate.json` — the demo mandate: `dailyUsd: 10` (real money at
-  risk), vendor allowlist
-- `gate/vendor/` — byte-identical snapshot of `agentbadge@40eb49c` (mmf-255);
-  `vendor-shasum.txt` pins all 68 files
+- `gate/shop.ts` — `/demo/shop/*`: catalog, purchase (server-priced,
+  intentId-deduped, balance-checked), receipts, by-intent reconciliation
+- `gate/catalog.json` — canonical trusted price list shared by gate+shop
+- `gate/mandate.json` — the demo mandate: `dailyUsd: 10` per rolling 24h
+  (equals the real funds at risk when wired to real money; the demo shop
+  itself denominates in demo-credit), vendor allowlist
+- `gate/vendor/` — snapshot of `agentbadge@40eb49c` (mmf-255);
+  `vendor-shasum.txt` pins all 68 upstream files — **67/68 byte-identical
+  + 1 disclosed delta** (`ledger.ts` arc-audit H2 fix, see PROVENANCE.md)
 - `gate/shims/` — build-time shims for workspace-package imports
 
 ## Run

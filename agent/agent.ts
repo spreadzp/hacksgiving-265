@@ -5,9 +5,10 @@
 // Deterministic parts (arithmetic, gate calls, retries) live here;
 // the LLM only picks carts and replans — real choices, real DENY.
 import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const HERE = new URL(".", import.meta.url).pathname;
+const HERE = fileURLToPath(new URL(".", import.meta.url));
 const CLIENT = `${HERE}gate-client.sh`;
 const MODEL = process.env.OLLAMA_MODEL ?? "llama3.2:3b";
 const BRAIN = process.env.AGENT_BRAIN ?? "ollama";
@@ -47,10 +48,10 @@ const extractJson = (s: string): any => {
 
 /* ------------------------------- gate --------------------------------- */
 
-const sh = (args: string) =>
-  execSync(`bash ${CLIENT} ${args}`, { encoding: "utf8" });
-const shMaybe = (args: string) => {
-  try { return { ok: true, out: sh(args) }; }
+const sh = (...args: string[]) =>
+  execFileSync("bash", [CLIENT, ...args], { encoding: "utf8" });
+const shMaybe = (...args: string[]) => {
+  try { return { ok: true, out: sh(...args) }; }
   catch (e: any) { return { ok: false, out: e.stdout ?? String(e) }; }
 };
 
@@ -58,7 +59,7 @@ const shMaybe = (args: string) => {
 
 const task = readFileSync(`${HERE}task.md`, "utf8");
 const mandate = JSON.parse(sh("mandate"));
-const catalog = JSON.parse(execSync(`cat ${HERE}catalog.json`, "utf8"));
+const catalog = JSON.parse(readFileSync(`${HERE}catalog.json`, "utf8"));
 const budget: number = mandate.caps.dailyUsd;
 // 1B models emit "Turkey" / "Pumpkin Pie" — normalize name or sku → sku
 const norm = (s: string) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -68,7 +69,7 @@ const price = (sku: string) => catalog.items.find((i: any) => i.sku === sku)?.pr
 const cartTotal = (skus: string[]) =>
   Math.round(skus.reduce((s, k) => s + (price(k) ?? 0), 0) * 100) / 100;
 const itemsJson = (skus: string[]) =>
-  JSON.stringify(skus.map((k) => ({ sku: k, priceUsd: price(k) })));
+  JSON.stringify(skus.map((k) => ({ sku: k, qty: 1 })));
 
 console.log(`== agent start ==  brain=${BRAIN} model=${MODEL} budget=$${budget}`);
 console.log(`mandate: ${JSON.stringify(mandate.caps)} vendors=${mandate.allowedVendors}`);
@@ -114,7 +115,7 @@ for (let round = 1; round <= MAX_ROUNDS; round++) {
   const total = cartTotal(skus);
   console.log(`cart: ${skus.join(", ")} = $${total}`);
 
-  const res = shMaybe(`buy ${total} '${itemsJson(skus)}'`);
+  const res = shMaybe("buy", String(total), itemsJson(skus));
   console.log(res.out.trim());
   const parsed = (() => { try { return JSON.parse(res.out); } catch { return null; } })();
 
