@@ -49,12 +49,20 @@ verdict_badge() { # verdict_badge <verdict> — colored inline badge
   esac
 }
 
-summary_box() { # summary_box <line1> [line2] — closing scoreboard
+summary_box() { # summary_box <line1> [line2] — closing scoreboard.
+  # Emoji count as 1 char but render 2 cells — compensate padding per emoji.
   local l1="$1" l2="${2:-}"
-  printf "\n${C_BOLD}${C_CYN}┌──────────────────────────────────────────────┐\n"
-  printf "│  %-44s│\n" "$l1"
-  [ -n "$l2" ] && printf "│  %-44s│\n" "$l2"
-  printf "└──────────────────────────────────────────────┘${C_RESET}\n"
+  _boxline() {
+    local txt="$1" w=54
+    local emojis=$(printf '%s' "$txt" | grep -o '[🛡🦃🔒📜⚡🤖✔✘]' | wc -l)
+    local pad=$(( w - ${#txt} - emojis ))
+    [ $pad -lt 1 ] && pad=1
+    printf "│  %s%*s│\n" "$txt" "$pad" ""
+  }
+  printf "\n${C_BOLD}${C_CYN}┌────────────────────────────────────────────────────────┐\n"
+  _boxline "$l1"
+  [ -n "$l2" ] && _boxline "$l2"
+  printf "└────────────────────────────────────────────────────────┘${C_RESET}\n"
 }
 
 spin() { # spin <title> <cmd...> — gum spinner or plain run

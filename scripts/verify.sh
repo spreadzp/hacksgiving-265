@@ -137,5 +137,5 @@ info "execute happy-path (connector → receipt) requires live sprite identity �
 info "verified against the live deployment, see evidence/ and README."
 
 echo
-summary_box "$I_SHIELD verify.sh: $PASS passed · $FAIL failed" "clone · run · judge — everything above is reproducible"
+summary_box "$I_SHIELD verify.sh: $PASS passed · $FAIL failed" "clone · run · judge"
 [ "$FAIL" -eq 0 ]
