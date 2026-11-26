@@ -18,14 +18,16 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GATE="$ROOT/gate"
 PASS=0; FAIL=0
-ok()   { echo "  PASS  $1"; PASS=$((PASS+1)); }
-bad()  { echo "  FAIL  $1"; FAIL=$((FAIL+1)); }
-info() { echo "  ....  $1"; }
+. "$ROOT/scripts/pretty.sh"
+banner "hacksgiving-265 · verify it yourself"
+ok()   { pass "$1"; PASS=$((PASS+1)); }
+bad()  { fail "$1"; FAIL=$((FAIL+1)); }
+info() { note "$1"; }
 
 command -v bun >/dev/null || { echo "bun required: https://bun.sh"; exit 64; }
 command -v jq >/dev/null || { echo "jq required"; exit 64; }
 
-echo "== 1. vendored mmf-255 byte integrity =="
+section "1 · vendored mmf-255 byte integrity"
 cd "$ROOT"
 # results/* are upstream-committed test-output snapshots that regenerate on
 # every suite run — excluded from byte-verification (see PROVENANCE.md).
@@ -42,13 +44,13 @@ else
   bad "unexpected vendor deltas: $DELTAS (expected: $EXPECTED_DELTAS)"
 fi
 
-echo "== 2. mmf-255 conformance suite =="
+section "2 · mmf-255 conformance suite"
 cd "$GATE"
 [ -d node_modules ] || { info "bun install…"; bun install --silent; }
 SUIT=$(timeout 300 bunx vitest run vendor/tests/conformance/mmf/ 2>/dev/null | grep -oP 'Tests\s+\K\d+ passed' | grep -oP '^\d+')
 if [ "$SUIT" = "43" ]; then ok "conformance 43/43"; else bad "conformance: got '$SUIT' passed (want 43)"; fi
 
-echo "== 3. local gate+shop behavioral smoke =="
+section "3 · local gate+shop behavioral smoke"
 DATA=$(mktemp -d)
 PORT=$((20000 + RANDOM % 20000))
 T_TOK="verify-gate-token"; S_TOK="verify-shop-key"
@@ -135,5 +137,5 @@ info "execute happy-path (connector → receipt) requires live sprite identity �
 info "verified against the live deployment, see evidence/ and README."
 
 echo
-echo "== verify.sh: $PASS passed, $FAIL failed =="
+summary_box "$I_SHIELD verify.sh: $PASS passed · $FAIL failed" "clone · run · judge — everything above is reproducible"
 [ "$FAIL" -eq 0 ]
