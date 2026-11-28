@@ -7,6 +7,8 @@
 
 **[▶ Demo video (1:44)](https://youtu.be/B0BtgH6Lvko)** — full DENY→replan→ALLOW arc, adversarial probes, kill-test
 
+**📖 Read the full story:** [We Gave an AI Agent a Spending Gate It Cannot Break — Then Paid Two Audits to Try](https://agentbadge.xyz/blog/arc-c65-cant-overspend) — also on [LinkedIn](https://www.linkedin.com/pulse/we-gave-ai-agent-spending-gate-cannot-break-paid-two-paul-spread-c8ibe), [dev.to](https://dev.to/spread2009/we-gave-an-ai-agent-a-spending-gate-it-cannot-break-then-paid-two-audits-to-try-4hl1) and [Facebook](https://www.facebook.com/1456310824235669/posts/122111025939549697)
+
 **Live demo artifacts:** [evidence/demo-results.json](evidence/demo-results.json) ·
 [gate/PROVENANCE.md](gate/PROVENANCE.md) · adversarial probe **11/11 resisted** ·
 conformance **43/43** · independent arc-audit: 2C/2H/8M found → **all fixed before recording**
